@@ -114,7 +114,7 @@
 		}).addTo(mymap);
 
 		//Request the GeoJson data from GitHub using Ajax
-		const Catchment_url = "https://blairscriven.github.io/test/Catchment_polygons.geojson";
+		const Catchment_url = "https://blairscriven.github.io/Can_Flood_Mapper_Proto/Catchment_polygons.geojson";
 		$.ajax({
 		dataType: "json",
 		url: Catchment_url,
