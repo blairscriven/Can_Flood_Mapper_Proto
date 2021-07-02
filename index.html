@@ -31,9 +31,6 @@
     <link rel="stylesheet" href="Flood_App.css" />
   </head>
 
-<script>
-</script>
-
   <body>
 	<div style="float:top;" id="accs"> <!-- Add the top ribbon -->
 		<p id="DischargeLABEL">Simulation:</p>
@@ -46,7 +43,7 @@
 				</optgroup>
 				<optgroup label="GeoMet">
 				  <option value="now_sim">Now</option>
-				  <option value="6h_sim">6 Hours</option>
+				  <option value="6h_sim">6 Hours (Not Available)</option>
 				</optgroup>
 		</select>
 		<div class="Hslidecontainer"> <!-- Add the Q and H sliders -->
@@ -59,41 +56,7 @@
 		<p><span id="Hdemo"></span> m </p>
 		<p><span id="Qdemo"></span> m^3/sec </p>
 		</div>
-		<script> <!-- Code for the top ribbon -->
-			var Hslider = document.getElementById("HRange");
-			var Houtput = document.getElementById("Hdemo");
-			var Qslider = document.getElementById("QRange");
-			var Qoutput = document.getElementById("Qdemo");
-			var Sim_menu = document.getElementById("simformat");
-			Houtput.innerHTML = Hslider.value;
-			Qoutput.innerHTML = Qslider.value;
-			
-			//Disable sliders based on dropdown menu
-			Sim_menu.addEventListener("change", disabling);
-			function disabling(event) {
-			  if (Sim_menu.value == 'H_sim') {
-				document.getElementById("HRange").disabled = false;
-				document.getElementById("QRange").disabled = true;
-			  } else if (Sim_menu.value == 'Q_sim') {
-				document.getElementById("HRange").disabled = true;
-				document.getElementById("QRange").disabled = false;
-			  } else if (Sim_menu.value == 'now_sim') {
-				document.getElementById("HRange").disabled = true;
-				document.getElementById("QRange").disabled = true;
-			  } else if (Sim_menu.value == 'remove_sim') {
-				document.getElementById("HRange").disabled = true;
-				document.getElementById("QRange").disabled = true;
-			  }
-			}
-			
-			//Code the textboxes to display Q and H
-			Hslider.oninput = function() {
-			  Houtput.innerHTML = this.value;
-			  }
-			Qslider.oninput = function() {
-			  Qoutput.innerHTML = this.value;
-			  }
-		</script>
+		<script src="Top_Ribbon.js"></script>
 	</div>
 	<div id="mapid"> <!-- Add the Map Divider -->
 		<div id="crosshair">+</div><!-- Add a crosshair -->

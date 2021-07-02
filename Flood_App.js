@@ -1,3 +1,4 @@
+
 		 /*************************
          * Add OpenStreetMap map using Leaflet
          ************************/
@@ -49,22 +50,22 @@
 			return div;
 		};
 
+		
 		 /*************************
          * Set up the MouseOver function for the Catchment Polygon layer -
 		 * Will trigger a rendering of the HAND model based on the 
 		 * simulation type selected and feature properties 
          *************************/
-		var Cors_enable = "https://cors-anywhere.herokuapp.com/"; //https://cors-anywhere.herokuapp.com/corsdemo
 		var Return_ori_text = document.getElementById("disclaimer").innerHTML;
 		function onEachFeature(feature, layer) {
 			//Collect all the needed attribute data from Catchment polygon
 			var base = feature.properties.BASE;
-			var QMIN_A = feature.properties.Qmin_a; //CERC-HAND-D Equation: Q = a(H^n)
+			var QMIN_A = feature.properties.Qmin_a; //CERC-HAND-D Equation: H = a(Q^n)
 			var QMIN_N = feature.properties.Qmin_n;
 			var QMAX_A = feature.properties.Qmax_a;
 			var QMAX_N = feature.properties.Qmax_n;
+			var STATION = feature.properties.STATION; //Hydrometric Station # (Water Survey of Canada)
 			var url_hand = feature.properties.HAND_URL;
-			var url_Hydro_station = Cors_enable + feature.properties.HYDRO_URL;
 			plotty.addColorScale("Dark_Blue", ["#1e00ff"], [1]); //Renders inundated areas as dark blue
 			const plottyRenderer_dark_blue = L.LeafletGeotiff.plotty({
 				displayMin: -2,
@@ -97,7 +98,7 @@
 					var sql_text =  math;
 					console.log(sql_text);
 					GeoTiff_Layer.options.renderer.setDisplayRange(0, sql_text); //Sets Threshold to render the flood map
-					GeoTiff_Layer_Discharge.options.renderer.setDisplayRange(-2, -1);
+					GeoTiff_Layer_Discharge.options.renderer.setDisplayRange(-2, -1); //removes flood map render
 					legendH.addTo(mymap);
 					legendQ.remove();
 				} else if (sim_type == 'Q_sim') {
@@ -112,44 +113,71 @@
 					GeoTiff_Layer_Discharge.options.renderer.setDisplayRange(0, sqlmax_text);
 					legendQ.addTo(mymap);
 					legendH.remove();
-				} else if (sim_type == 'remove_sim') {
+				} else if (sim_type == 'remove_sim') { //removes all flood map renders and legends
 					GeoTiff_Layer.options.renderer.setDisplayRange(-2, -1);
 					GeoTiff_Layer_Discharge.options.renderer.setDisplayRange(-2, -1);
 					legendQ.remove();
 					legendH.remove();
 				} else if (sim_type == 'now_sim') { 
-					var ECCC_discharge = 0
-					var ECCC_level = 0
+					var GeoMet_discharge = 0;
+					var GeoMet_level = 0;
 					GeoTiff_Layer_Discharge.options.renderer.setDisplayRange(-2, -1);
+					GeoTiff_Layer.options.renderer.setDisplayRange(-2, -1);
 					legendQ.remove();
 					legendH.addTo(mymap);
-					fetch(url_Hydro_station, 
-						{}).then(function(response){
-						return response.text();
-					}).then(function(text){
-						//Extract the values from the discharge and water level columns (feilds) in the last row(line)
-						var lines = text.trim().split('\n');
-						var lastLine = lines.slice(-1)[0];
-
-						var fields = lastLine.split(',');
-						ECCC_discharge = fields[6];
-						ECCC_level = fields[2];
-
-						console.log(ECCC_discharge);
-						console.log(ECCC_level);
-						if(ECCC_level !== null){ //Checks first if there is water level data; if not, discharge is used
-							sql_value = Number(ECCC_level) - base;
-							var sql_text = sql_value;
-							console.log(sql_value);
-							GeoTiff_Layer.options.renderer.setDisplayRange(0, sql_text);
-						} else if (ECCC_discharge !== null) {
-							sql_value = (QMAX_A * (Number(ECCC_discharge) ** QMAX_N));
-							var sql_text = sql_value;
-							console.log(sql_text);
-							GeoTiff_Layer.options.renderer.setDisplayRange(0, sql_text);
-						} else {
-							document.getElementById("disclaimer").innerHTML = "No station data available"; //error handling; changes disclaimer
+					
+					// Create the GeoMet URL, starting with the current time and date in the proper format;
+					// Example of a working GeoMet URL:
+					// https://api.weather.gc.ca/collections/hydrometric-realtime/items/02GA003.2021-07-02.11:05?f=json 
+					var currentdate = new Date();
+					var round_down_5 = Math.floor(currentdate.getMinutes() / 5) * 5; //round down to the nearest 5 minute interval
+					var Current_Time = currentdate.getFullYear() + "-"
+									+ ('0' + (currentdate.getMonth()+1)).slice(-2)  + "-" //adds a 0 digit when # < 10
+									+ ('0' + currentdate.getDate()).slice(-2) + "."
+									+ currentdate.getHours() + ":"  
+									+ ('0' + round_down_5).slice(-2);
+					const Start_Sect_url = "https://api.weather.gc.ca/collections/hydrometric-realtime/items/";
+					const Station_Num = STATION;
+					const End_Sect_url = "?f=json";
+					var GeoMet_URL = Start_Sect_url + Station_Num + "." + Current_Time + End_Sect_url;
+					console.log(GeoMet_URL)
+					
+					//Create a GeoJSON layer
+					var GeoMet_GeoJson = new L.GeoJSON(GeoMet_GeoJson, {
+						onEachFeature: function (feature, layer) {
+							GeoMet_discharge = feature.properties.DISCHARGE;
+							GeoMet_level = feature.properties.LEVEL;
+							GeoMet_STATION = feature.properties.STATION_NAME;
+							console.log(GeoMet_STATION)
+							if(GeoMet_level !== null){ //Checks first if there is water level data; if not, discharge is used
+								sql_value = Number(GeoMet_level) - base;
+								var sql_text = sql_value;
+								console.log("Level(m): " + sql_value + "    " + GeoMet_level + " - " + base);
+								GeoTiff_Layer.options.renderer.setDisplayRange(0, sql_text);
+							} else if (GeoMet_discharge !== null) {
+								sql_value = (QMAX_A * (Number(GeoMet_discharge) ** QMAX_N));
+								var sql_text = sql_value;
+								console.log("Discharge(m^3/sec): " + sql_value);
+								GeoTiff_Layer.options.renderer.setDisplayRange(0, sql_text);
+							} else {
+								document.getElementById("disclaimer").innerHTML = "No station data available"; //error handling; changes disclaimer
+							}
 						}
+					});
+					 
+					// Add GeoMet Json data into the GeoJson Layer
+					function handleJsonGeoMet(data) {
+					  GeoMet_GeoJson.addData(data); 
+					}
+
+					// Request the GeoMet Json data using ajax (JQuery)
+					$.ajax({
+					  url: GeoMet_URL,
+					  dataType : 'json',
+					  success: handleJsonGeoMet,
+					  error: function() {
+						document.getElementById("disclaimer").innerHTML = "No station data available"; //error handling; changes disclaimer
+					  }
 					});
 				} else {
 				}
@@ -174,7 +202,7 @@
 		}).addTo(mymap);
 
 		//Request the GeoJson data from GitHub using Ajax
-		const Catchment_url = "https://blairscriven.github.io/Can_Flood_Mapper_Proto/Catchment_polygons.geojson";
+		const Catchment_url = "https://blairscriven.github.io/Can_Flood_Mapper_Proto/Catchments_polygons.geojson";
 		$.ajax({
 		dataType: "json",
 		url: Catchment_url,
@@ -182,3 +210,4 @@
 				geojsonLayer.addData(data);
 		}
 		}).error(function() {});
+		
