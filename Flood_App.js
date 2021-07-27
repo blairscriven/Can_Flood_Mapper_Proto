@@ -55,6 +55,7 @@
          * Set up the MouseOver function for the Catchment Polygon layer -
 		 * Will trigger a rendering of the HAND model based on the 
 		 * simulation type selected and feature properties 
+		 * NOTE: I am not sure why, but the renderers needed an offset of 0.97 to work properly (see below)
          *************************/
 		var Return_ori_text = document.getElementById("disclaimer").innerHTML;
 		function onEachFeature(feature, layer) {
@@ -97,7 +98,7 @@
 					var math = Number(sql_value);
 					var sql_text =  math;
 					console.log(sql_text);
-					GeoTiff_Layer.options.renderer.setDisplayRange(0, sql_text); //Sets Threshold to render the flood map
+					GeoTiff_Layer.options.renderer.setDisplayRange(0, sql_text - 0.97); //Sets Threshold to render the flood map
 					GeoTiff_Layer_Discharge.options.renderer.setDisplayRange(-2, -1); //removes flood map render
 					legendH.addTo(mymap);
 					legendQ.remove();
@@ -109,8 +110,8 @@
 					var sqlmax_text =  math_max;
 					console.log(sqlmin_text);
 					console.log(sqlmax_text);
-					GeoTiff_Layer.options.renderer.setDisplayRange(0, sqlmin_text);
-					GeoTiff_Layer_Discharge.options.renderer.setDisplayRange(0, sqlmax_text);
+					GeoTiff_Layer.options.renderer.setDisplayRange(0, sqlmin_text - 0.97); //offset of 0.97 for rendering
+					GeoTiff_Layer_Discharge.options.renderer.setDisplayRange(0, sqlmax_text - 0.97);
 					legendQ.addTo(mymap);
 					legendH.remove();
 				} else if (sim_type == 'remove_sim') { //removes all flood map renders and legends
@@ -151,14 +152,17 @@
 							console.log(GeoMet_STATION)
 							if(GeoMet_level !== null){ //Checks first if there is water level data; if not, discharge is used
 								sql_value = Number(GeoMet_level) - base;
+								if (sql_value < 0) {
+									sql_value = 0;
+								}
 								var sql_text = sql_value;
 								console.log("Level(m): " + sql_value + "    " + GeoMet_level + " - " + base);
-								GeoTiff_Layer.options.renderer.setDisplayRange(0, sql_text);
+								GeoTiff_Layer.options.renderer.setDisplayRange(0, sql_value - 0.97);
 							} else if (GeoMet_discharge !== null) {
 								sql_value = (QMAX_A * (Number(GeoMet_discharge) ** QMAX_N));
 								var sql_text = sql_value;
 								console.log("Discharge(m^3/sec): " + sql_value);
-								GeoTiff_Layer.options.renderer.setDisplayRange(0, sql_text);
+								GeoTiff_Layer.options.renderer.setDisplayRange(0, sql_value - 0.97);
 							} else {
 								document.getElementById("disclaimer").innerHTML = "No station data available"; //error handling; changes disclaimer
 							}
