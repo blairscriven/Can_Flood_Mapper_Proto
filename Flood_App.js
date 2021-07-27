@@ -134,7 +134,7 @@
 					var Current_Time = currentdate.getFullYear() + "-"
 									+ ('0' + (currentdate.getMonth()+1)).slice(-2)  + "-" //adds a 0 digit when # < 10
 									+ ('0' + currentdate.getDate()).slice(-2) + "."
-									+ currentdate.getHours() + ":"  
+									+ ('0' + (currentdate.getHours()+1)).slice(-2) + ":"  
 									+ ('0' + round_down_5).slice(-2);
 					const Start_Sect_url = "https://api.weather.gc.ca/collections/hydrometric-realtime/items/";
 					const Station_Num = STATION;
